@@ -1,0 +1,9 @@
+Tools
+
+llvm-objdump - disassembler
+
+$ llvm-objdump -d kernel.elf
+
+check the addresses of functions/variables using llvm-nm
+
+$ llvm-nm kernel.elf
