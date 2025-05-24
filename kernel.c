@@ -30,7 +30,9 @@ void kernel_main(void) {
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
 
     printf("\n\nHello %s\n", "World!");
-
+    PANIC("booted!");
+    printf("unreachable here!\n");
+    
     for (;;) {
         __asm__ __volatile__("wfi");
     }
