@@ -68,6 +68,6 @@ struct process {
 	int pid;
 	int state;
 	vaddr_t sp;
-	uint8_t stack[8192];
+	uint8_t stack[8192]; // kernel (not user!) stack. Each process has own independent kernel stack
 };
 

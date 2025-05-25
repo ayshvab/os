@@ -43,7 +43,9 @@ __attribute__((naked))
 __attribute__((aligned(4)))
 void kernel_entry(void) {
 	__asm__ __volatile__(
-		 "csrw sscratch, sp\n"
+		// Retrieve the kernel stack of the running process from scratch.
+		"csrrw sp, sscratch, sp\n"
+
 		"addi sp, sp, -4 * 31\n"
 		"sw ra,  4 * 0(sp)\n"
 		"sw gp,  4 * 1(sp)\n"
@@ -76,8 +78,13 @@ void kernel_entry(void) {
 		"sw s10, 4 * 28(sp)\n"
 		"sw s11, 4 * 29(sp)\n"
 
+		// Retrieve and save the sp at the time of exception.
 		"csrr a0, sscratch\n"
-		"sw a0, 4 * 30(sp)\n"
+		"sw a0,  4 * 30(sp)\n"
+
+		// Reset the kernel stack.
+		"addi a0, sp, 4 * 31\n"
+		"csrw sscratch, a0\n"
 
 		"mv a0, sp\n"
 		"call handle_trap\n"
@@ -208,6 +215,32 @@ void delay(void) {
 		__asm__ __volatile__("nop");
 }
 
+struct process* current_proc;
+struct process* idle_proc;
+
+void yield(void) {
+	struct process* next = idle_proc;
+	for (int i = 0; i < PROCS_MAX; i++) {
+		struct process* proc = &procs[(current_proc->pid + i) % PROCS_MAX];
+		if (proc->state == PROC_RUNNABLE && proc->pid > 0) {
+			next = proc;
+			break;
+		}
+	}
+
+	if (next == current_proc)
+		return;
+
+	__asm__ __volatile__(
+		"csrw sscratch, %[sscratch]\n"
+		:
+		: [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
+	);
+	struct process* prev = current_proc;
+	current_proc = next;
+	switch_context(&prev->sp, &next->sp);
+}
+
 struct process* proc_a;
 struct process* proc_b;
 
@@ -215,7 +248,8 @@ void proc_a_entry(void) {
 	printf("starting process A\n");
 	while (1) {
 		putchar('A');
-		switch_context(&proc_a->sp, &proc_b->sp);
+		// switch_context(&proc_a->sp, &proc_b->sp);
+		yield();
 		delay();
 	}
 }
@@ -224,7 +258,8 @@ void proc_b_entry(void) {
 	printf("starting process B\n");
 	while (1) {
 		putchar('B');
-		switch_context(&proc_b->sp, &proc_a->sp);
+		// switch_context(&proc_b->sp, &proc_a->sp);
+		yield();
 		delay();
 	}
 }
@@ -234,18 +269,24 @@ void kernel_main(void) {
 	WRITE_CSR(stvec, (uint32_t) kernel_entry);
 	// __asm__ __volatile__("unimp");
 
-	printf("\n\nHello %s\n", "World!");
+	printf("\n\n");
+	printf("Hello %s\n", "World!");
 
-	paddr_t paddr0 = alloc_pages(2);
-	paddr_t paddr1 = alloc_pages(1);
-	printf("alloc_pages test: paddr0=%x\n", paddr0);
-	printf("alloc_pages test: paddr1=%x\n", paddr1);
+	// paddr_t paddr0 = alloc_pages(2);
+	// paddr_t paddr1 = alloc_pages(1);
+	// printf("alloc_pages test: paddr0=%x\n", paddr0);
+	// printf("alloc_pages test: paddr1=%x\n", paddr1);
+
+	idle_proc = create_process((uint32_t) NULL);
+	idle_proc->pid = 0;
+	current_proc = idle_proc;
 
 	proc_a = create_process((uint32_t)proc_a_entry);
 	proc_b = create_process((uint32_t)proc_b_entry);
-	proc_a_entry();
 
+	yield();
 	PANIC("booted!");
+
 	for (;;) {
 		__asm__ __volatile__("wfi");
 	}

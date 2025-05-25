@@ -7,3 +7,7 @@ $ llvm-objdump -d kernel.elf
 check the addresses of functions/variables using llvm-nm
 
 $ llvm-nm kernel.elf
+
+TODO
+
+[] Support nested interrupt handling
