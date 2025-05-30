@@ -11,3 +11,10 @@ $ llvm-nm kernel.elf
 TODO
 
 [] Support nested interrupt handling
+
+[] find out why illegal instructions occurs in sbi
+riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x800086de, tval:0x3c0028f3, desc=illegal_instruction
+riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009bb2, tval:0xb1302873, desc=illegal_instruction
+riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x8000957a, tval:0xda002573, desc=illegal_instruction
+riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x800095be, tval:0xfb002573, desc=illegal_instruction
+riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009612, tval:0x30c02673, desc=illegal_instruction
