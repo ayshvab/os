@@ -60,6 +60,7 @@ struct trap_frame {
     } while (0)
 
 #define SSTATUS_SPIE (1 << 5)
+#define SCAUSE_ECALL 8
 
 #define PROCS_MAX 8
 #define PROC_UNUSED 0
@@ -81,3 +82,4 @@ struct process {
 #define PAGE_U    (1 << 4)   // User (accessible in user mode)
 
 #define USER_BASE 0x1000000
+
