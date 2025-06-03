@@ -1,0 +1,57 @@
+---
+Checks: '-*,
+bugprone-*,
+-bugprone-easily-swappable-parameters,
+-bugprone-reserved-identifier,
+cert-dcl03-c,
+cert-dcl37-c,
+cert-dcl51-cpp,
+cert-env33-c,
+cert-err33-c,
+cert-err34-c,
+cert-fio30-c,
+cert-flp30-c,
+cert-msc30-c,
+cert-msc50-cpp,
+cert-pos44-c,
+cert-str34-c,
+clang-analyzer-*,
+-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+misc-*,
+-misc-no-recursion,
+-misc-unused-parameters,
+performance-*,
+portability-*,
+readability-*,
+-readability-function-cognitive-complexity,
+-readability-identifier-length,
+-readability-magic-numbers,
+-readability-avoid-const-params-in-decls'
+
+CheckOptions:
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.TypedefCase
+    value: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: true
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: 2
+
+HeaderFilterRegex: '.*'
+WarningsAsErrors: ''
+FormatStyle: none
