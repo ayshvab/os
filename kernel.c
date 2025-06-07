@@ -336,8 +336,7 @@ void virtio_blk_init(void) {
 
 	// Get the disk capacity.
 	blk_capacity = virtio_reg_read64(VIRTIO_REG_DEVICE_CONFIG+0) * SECTOR_SIZE;
-	printf("virtio-blk: capacity is %d bytes\n", blk_capacity);
-
+	printf("virtio-blk: capacity is %llu bytes\n", blk_capacity);
 	// Allocate a region to store requests to the device.
 	blk_req_paddr = alloc_pages(align_up(sizeof(*blk_req), PAGE_SIZE) / PAGE_SIZE);
 	blk_req = (struct virtio_blk_req*)blk_req_paddr;
@@ -441,8 +440,13 @@ void fs_init(void) {
     strcpy(file->name, header->name);
     memcpy(file->data, header->data, filesz);
     file->size = filesz;
+    printf("file: %s, size=%d\n", file->name, file->size);
     off += align_up(sizeof(struct tar_header) + filesz, SECTOR_SIZE);
   }
+}
+
+void fs_flush(void) {
+	// TODO
 }
 
 /* ...File System */

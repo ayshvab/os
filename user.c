@@ -21,7 +21,7 @@ void putchar(char ch) {
 }
 
 int getchar(void) {
-	syscall(SYS_GETCHAR, 0, 0, 0);
+	return syscall(SYS_GETCHAR, 0, 0, 0);
 }
 
 __attribute__((noreturn)) void exit(void) {

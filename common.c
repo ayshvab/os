@@ -79,6 +79,58 @@ void printf(const char* fmt, ...) {
 					}
 					break;
 				}
+				case 'l': {
+					fmt++;
+					if (*fmt == '\0') {
+						putchar('l');
+						goto end;
+					} else if (*fmt == 'l') {
+						fmt++;
+						if (*fmt == 'u') {
+						unsigned long long value = va_arg(vargs, unsigned long long);
+						unsigned high = (unsigned)(value >> 32);
+						unsigned low = (unsigned)value;
+						if (high == 0) {
+						 	// Print just the low part
+							unsigned magnitude = low;
+							unsigned divisor = 1;
+							while (magnitude / divisor > 9) {
+							  divisor *= 10;
+						 	}
+							while(divisor > 0) {
+								putchar('0' + magnitude / divisor);
+								magnitude %= divisor;
+								divisor /= 10;
+							}
+						} else {
+							// Simple version print in hex
+							putchar('0');
+							putchar('x');
+							for (int i = 7; i >= 0; i--) {
+								unsigned nibble = (high >> (i*4)) & 0xf;
+								putchar("0123456789abcdef"[nibble]);
+							}
+							for (int i = 7; i >= 0; i--) {
+								unsigned nibble = (low >> (i*4)) & 0xf;
+								putchar("0123456789abcdef"[nibble]);
+							}
+						}
+						break;
+						} else if (*fmt == '\0') {
+							putchar('l');
+							putchar('l');
+							goto end;
+						} else {
+							putchar('l');
+							putchar('l');
+							putchar(*fmt);
+							break;
+						}
+					} else {
+						putchar(*fmt);
+					}
+					break;
+				}
 				case 'x': {
 					unsigned value = va_arg(vargs, unsigned);
 					for (int i = 7; i >= 0; i--) {
