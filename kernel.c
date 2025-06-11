@@ -201,7 +201,7 @@ void user_entry(void) {
 		"sret                    \n"
 		:
 		: [sepc] "r" (USER_BASE),
-		  [sstatus] "r" (SSTATUS_SPIE)
+		  [sstatus] "r" (SSTATUS_SPIE | SSTATUS_SUM)
 	);
 }
 
@@ -245,6 +245,7 @@ struct process* create_process(const void* image, size_t image_size) {
 	map_page(page_table, VIRTIO_BLK_PADDR, VIRTIO_BLK_PADDR, PAGE_R | PAGE_W);
 
 	// Map user pages
+	printf("Mapping user image: size=%d, pages=%d\n", image_size, (image_size + PAGE_SIZE - 1) / PAGE_SIZE);
 	for (uint32_t off = 0; off < image_size; off += PAGE_SIZE) {
 		paddr_t page = alloc_pages(1);
 		// Handle the case where the data to be copied is smaller than the page size.
@@ -252,6 +253,7 @@ struct process* create_process(const void* image, size_t image_size) {
 		size_t copy_size = remaining < PAGE_SIZE ? remaining : PAGE_SIZE;
 		memcpy((void*)page, image + off, copy_size);
 		map_page(page_table, USER_BASE + off, page, PAGE_U | PAGE_R | PAGE_W | PAGE_X);
+		printf("Mapped page: vaddr=0x%x, paddr=0x%x, size=%d\n", USER_BASE + off, page, copy_size);
 	}
 
 	// Initialize fields.
@@ -422,31 +424,84 @@ int oct2int(char* oct, int len) {
 }
 
 void fs_init(void) {
-  for (uint32_t sector = 0; sector < sizeof(disk) / SECTOR_SIZE; sector++)
-    read_write_disk(&disk[sector * SECTOR_SIZE], sector, false);
+	for (uint32_t sector = 0; sector < sizeof(disk) / SECTOR_SIZE; sector++)
+		read_write_disk(&disk[sector * SECTOR_SIZE], sector, false);
 
-  uint32_t off = 0;
-  for (int i = 0; i < FILES_MAX; i++) {
-    struct tar_header* header = (struct tar_header*)&disk[off];
-    if (header->name[0] == '\0')
-      break;
+	uint32_t off = 0;
+	for (int i = 0; i < FILES_MAX; i++) {
+		struct tar_header* header = (struct tar_header*)&disk[off];
+		if (header->name[0] == '\0')
+			break;
 
-    if (strcmp(header->magic, "ustar") != 0)
-      PANIC("invalid tar header: magic=\"%s\"", header->magic);
+		if (strcmp(header->magic, "ustar") != 0)
+			PANIC("invalid tar header: magic=\"%s\"", header->magic);
 
-    int filesz = oct2int(header->size, sizeof(header->size));
-    struct file* file = &files[i];
-    file->in_use = true;
-    strcpy(file->name, header->name);
-    memcpy(file->data, header->data, filesz);
-    file->size = filesz;
-    printf("file: %s, size=%d\n", file->name, file->size);
-    off += align_up(sizeof(struct tar_header) + filesz, SECTOR_SIZE);
-  }
+		int filesz = oct2int(header->size, sizeof(header->size));
+		struct file* file = &files[i];
+		file->in_use = true;
+		strcpy(file->name, header->name);
+		memcpy(file->data, header->data, filesz);
+		file->size = filesz;
+		printf("file: %s, size=%d\n", file->name, file->size);
+		off += align_up(sizeof(struct tar_header) + filesz, SECTOR_SIZE);
+	}
+	printf("disk address=%x, disk offset=%d\n", &disk, off);
 }
 
 void fs_flush(void) {
-	// TODO
+	// Copy all file contents into `disk` buffer.
+	memset(disk, 0, sizeof(disk));
+	unsigned off = 0;
+	for (int file_i=0; file_i < FILES_MAX; file_i++) {
+		struct file* file = &files[file_i];
+		if (!file->in_use)
+			continue;
+
+		struct tar_header* header = (struct tar_header*)&disk[off];
+		memset(header, 0, sizeof(*header));
+		strcpy(header->name, file->name);
+		strcpy(header->mode, "000644");
+		strcpy(header->magic, "ustar");
+		strcpy(header->version, "00");
+		header->type = '0';
+
+		// Turn the file size into an octal string
+		int filesz = file->size;
+		for (int i = sizeof(header->size); i > 0; i--) {
+			header->size[i-1] = (filesz % 8) + '0';
+			filesz /= 8;
+		}
+
+		// Calculate the checksum.
+		int checksum = ' ' * sizeof(header->checksum);
+		for (unsigned i = 0; i < sizeof(struct tar_header); i++) {
+			checksum += (unsigned char)disk[off+i];
+		}
+		for (int i=5; i>=0; i--) {
+			header->checksum[i] = (checksum % 8) + '0';
+			checksum /= 8;
+		}
+
+		// Copy file data.
+		memcpy(header->data, file->data, file->size);
+		off += align_up(sizeof(struct tar_header) + file->size, SECTOR_SIZE);
+	}
+
+	// Write `disk` buffer into the virtio-blk
+	for (unsigned sector = 0; sector < sizeof(disk) / SECTOR_SIZE; sector++)
+		read_write_disk(&disk[sector * SECTOR_SIZE], sector, true);
+
+	printf("wrote %d bytes to disk\n", sizeof(disk));
+}
+
+struct file* fs_lookup(const char* filename) {
+	for (int i=0; i < FILES_MAX; i++) {
+		struct file* file = &files[i];
+		if (!strcmp(file->name, filename)) {
+			return file;
+		}
+	}
+	return NULL;
 }
 
 /* ...File System */
@@ -510,6 +565,38 @@ void handle_syscall(struct trap_frame* f) {
 			 */
 			yield();
 			PANIC("unreachable");
+		case SYS_WRITEFILE:
+		case SYS_READFILE: {
+			/* NOTE WARNING
+			 * For simplicity, we are directly referencing pointers passed from applications 
+			 * (aka. user pointers), but this poses security issues. 
+			 * If users can specify arbitrary memory areas, they could read and 
+			 * write kernel memory areas through system calls.
+			 * TODO
+			*/
+			const char* filename = (const char*)f->a0;
+			char* buf = (char*) f->a1;
+			int len = f->a2;
+			struct file* file = fs_lookup(filename);
+			if (!file) {
+				printf("file not found: %s\n", filename);
+				f->a0 = -1;
+				break;
+			}
+			if (len > (int)sizeof(file->data))
+				len = file->size;
+
+			if (f->a3 == SYS_WRITEFILE) {
+				memcpy(file->data, buf, len);
+				file->size = len;
+				fs_flush();
+			} else {
+				memcpy(buf, file->data, len);
+			}
+
+			f->a0 = len;
+			break;
+		}
 		default:
 			PANIC("unexpected syscall a3=%x\n", f->a3);
 	}
@@ -523,6 +610,12 @@ void handle_trap(struct trap_frame* f) {
 		handle_syscall(f);
 		user_pc += 4;
 	} else {
+		printf("TRAP: scause=%x (", scause);
+		if (scause == 13) printf("Load page fault");
+		else if (scause == 15) printf("Store page fault");
+		else if (scause == 12) printf("Instruction page fault");
+		else printf("Unknown");
+		printf("), stval=%x, sepc=%x, pid=%d\n", stval, user_pc, current_proc->pid);
 		PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
 	}
 	WRITE_CSR(sepc, user_pc);

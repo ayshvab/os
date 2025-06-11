@@ -59,8 +59,9 @@ struct trap_frame {
         __asm__ __volatile__("csrw " #reg ", %0" ::"r"(__tmp));                \
     } while (0)
 
-#define SSTATUS_SPIE (1 << 5)
 #define SCAUSE_ECALL 8
+#define SSTATUS_SPIE (1 << 5)
+#define SSTATUS_SUM (1 << 18)
 
 #define PROCS_MAX 8
 #define PROC_UNUSED 0

@@ -21,3 +21,5 @@ riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009612, tval:0x
 
 
 [] https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+
+[] For example, why do read(2) and write(2) system calls in Linux take file descriptors as arguments, not filenames?
