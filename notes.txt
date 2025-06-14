@@ -1,3 +1,27 @@
+// Virtio
+
+Upgrade virtio block driver to latest version. Move from current legacy
+[] process notfications as interrups
+
+////////////
+
+https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-20001
+
+github.com/mit-pdos/xv6-riscv
+
+
+[] Add features
+   [] A proper memory allocator that allows freeing memory.
+   [] Interrup handling. Do not busy-wait for disk I/O.
+   [] A full-fledged file system. Implement ext2 would be a good start.
+   [] Network communication (TCP/IP). It's not hard to implement UDP/IP. Virtio-net is very similar to
+      virtio-blk!
+
+[] https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
+
+[] For example, why do read(2) and write(2) system calls in Linux take file descriptors as arguments, not filenames?
+
+
 Tools
 
 llvm-objdump - disassembler
@@ -20,6 +44,7 @@ riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x800095be, tval:0x
 riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009612, tval:0x30c02673, desc=illegal_instruction
 
 
-[] https://en.wikipedia.org/wiki/Design_of_the_FAT_file_system
 
-[] For example, why do read(2) and write(2) system calls in Linux take file descriptors as arguments, not filenames?
+
+
+
