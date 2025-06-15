@@ -318,8 +318,10 @@ void virtio_blk_init(void) {
 	if (virtio_reg_read32(VIRTIO_REG_MAGIC) != 0x74726976)
 		PANIC("virtio: invalid magic value");
 	/* TODO: Why we use legacy version 1 ? Let's move to current version 2 */
-	if (virtio_reg_read32(VIRTIO_REG_VERSION) != 1)
-		PANIC("virtio: invalid version");
+	if (virtio_reg_read32(VIRTIO_REG_VERSION) == 1)
+		PANIC("virtio: unsupported legacy version");
+	// if (virtio_reg_read32(VIRTIO_REG_VERSION) != 1)
+	// 	PANIC("virtio: invalid version");
 	if (virtio_reg_read32(VIRTIO_REG_DEVICE_ID) != VIRTIO_DEVICE_BLK)
 		PANIC("virtio: invalid device id");
 

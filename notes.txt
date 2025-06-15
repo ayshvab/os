@@ -1,14 +1,22 @@
-// Virtio
+Upgrade virtio block driver to latest version. Move from current legacy. virtio spec 4.2.2 MMIO Device Register Layout
+Why version read from virtio-blk device are always 0x01 (legacy) ?
+Why qemu virtio-blk device support only legacy ?
+Answer here https://brennan.io/2020/03/22/sos-block-device/
+By default QEMU use use legacy virtio
 
-Upgrade virtio block driver to latest version. Move from current legacy
-[] process notfications as interrups
+[] Look at qemu virtio blk device source code
+
+[] Qemu for riscv is passing devicetree to kernel. Bootloaders on riscv must created and passes devicetree 
+in kernel. ARM in general too. So task is implement devicetree parser to handle different devices nice.
+https://www.devicetree.org/
+
+[] process notfications as interrupts
 
 ////////////
 
 https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-20001
 
 github.com/mit-pdos/xv6-riscv
-
 
 [] Add features
    [] A proper memory allocator that allows freeing memory.
@@ -21,7 +29,6 @@ github.com/mit-pdos/xv6-riscv
 
 [] For example, why do read(2) and write(2) system calls in Linux take file descriptors as arguments, not filenames?
 
-
 Tools
 
 llvm-objdump - disassembler
@@ -32,8 +39,6 @@ check the addresses of functions/variables using llvm-nm
 
 $ llvm-nm kernel.elf
 
-TODO
-
 [] Support nested interrupt handling
 
 [] find out why illegal instructions occurs in sbi
@@ -42,9 +47,3 @@ riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009bb2, tval:0x
 riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x8000957a, tval:0xda002573, desc=illegal_instruction
 riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x800095be, tval:0xfb002573, desc=illegal_instruction
 riscv_cpu_do_interrupt: hart:0, async:0, cause:00000002, epc:0x80009612, tval:0x30c02673, desc=illegal_instruction
-
-
-
-
-
-
