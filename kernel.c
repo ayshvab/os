@@ -317,11 +317,19 @@ struct virtio_virtq* virtq_init(unsigned index) {
 void virtio_blk_init(void) {
 	if (virtio_reg_read32(VIRTIO_REG_MAGIC) != 0x74726976)
 		PANIC("virtio: invalid magic value");
-	/* TODO: Why we use legacy version 1 ? Let's move to current version 2 */
-	if (virtio_reg_read32(VIRTIO_REG_VERSION) == 1)
-		PANIC("virtio: unsupported legacy version");
-	// if (virtio_reg_read32(VIRTIO_REG_VERSION) != 1)
-	// 	PANIC("virtio: invalid version");
+
+	uint32_t version = virtio_reg_read32(VIRTIO_REG_VERSION);
+	if (version == 1) {
+		// Handle Legacy Interface
+		PANIC("TODO virtio-blk: TODO");
+	} else if (version == 2) {
+		PANIC("TODO virtio-blk: support legacy version");
+	} else {
+		PANIC("virtio: invalid version");
+	}
+
+	// Currently we use legacy interface
+
 	if (virtio_reg_read32(VIRTIO_REG_DEVICE_ID) != VIRTIO_DEVICE_BLK)
 		PANIC("virtio: invalid device id");
 
@@ -646,20 +654,28 @@ void proc_b_entry(void) {
 	}
 }
 
+
+/* DEVICETREE BEG */
+void process_devicetree(void) {
+	// TODO: how devicetree passed to kernel in qemu ?
+}
+
+/* DEVICETREE END */
+
+
 void kernel_main(void) {
 	memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
 	WRITE_CSR(stvec, (uint32_t) kernel_entry);
+	/*
+
+	[] Check that a1 or a0 registers contains address to devicetree blob
+	[] Parse devicetree blob
+	[] Init drivers for supported device (for now it is virtio-blk device)
+
+	*/
+	process_devicetree();
 	virtio_blk_init();
 	fs_init();
-
-	/* char buf[SECTOR_SIZE]; */
-	/* read_write_disk(buf, 0, false /\* read from the disk *\/); */
-	/* printf("first sector: %s\n", buf); */
-
-	/* strcpy(buf, "hello from kernel!!!\n"); */
-	/* read_write_disk(buf, 0, true /\* write to the disk *\/); */
-
-	/* printf("\n\n"); */
 
 	idle_proc = create_process(NULL, 0);
 	idle_proc->pid = 0;

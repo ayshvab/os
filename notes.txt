@@ -2,7 +2,7 @@ Upgrade virtio block driver to latest version. Move from current legacy. virtio 
 Why version read from virtio-blk device are always 0x01 (legacy) ?
 Why qemu virtio-blk device support only legacy ?
 Answer here https://brennan.io/2020/03/22/sos-block-device/
-By default QEMU use use legacy virtio
+By default QEMU use legacy virtio
 
 [] Look at qemu virtio blk device source code
 
