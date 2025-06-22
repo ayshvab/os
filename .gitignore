@@ -8,3 +8,7 @@
 *.log
 *.pcap
 .idea
+qemu.dtb
+qemu.dts
+breakpoints.gdb
+.gdb_history

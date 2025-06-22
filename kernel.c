@@ -9,6 +9,9 @@ extern char __kernel_base[];
 extern char _binary_shell_bin_start[];
 extern char _binary_shell_bin_size[];
 
+uint32_t hartid;
+void* dtb;
+
 paddr_t alloc_pages(uint32_t n) {
 	static paddr_t next_paddr = (paddr_t) __free_ram;
 	paddr_t paddr = next_paddr;
@@ -662,11 +665,14 @@ void process_devicetree(void) {
 
 /* DEVICETREE END */
 
+// uint32_t hartid;
+// void* dtb;
 
 void kernel_main(void) {
 	memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
 	WRITE_CSR(stvec, (uint32_t) kernel_entry);
 	/*
+	 * How devicetree passed to the kernel ? - look at docs/firmware/fw.md at opensbi sourcecode
 
 	[] Check that a1 or a0 registers contains address to devicetree blob
 	[] Parse devicetree blob
@@ -696,7 +702,13 @@ void kernel_main(void) {
 __attribute__((section(".text.boot")))
 __attribute__((naked))
 void boot(void) {
-	__asm__ __volatile__(
+	__asm__ volatile(
+		"mv %[out_hartid], a0\n"
+		"mv %[out_dtb], a1\n"
+		: [out_hartid] "=r" (hartid),
+		  [out_dtb] "=r" (dtb)
+	);
+	__asm__ volatile(
 		"mv sp, %[stack_top]\n" // Set the stack pointer
 		"j kernel_main\n"       // Jump to the kernel main function
 		:

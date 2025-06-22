@@ -1,3 +1,7 @@
+Why in GDB when pc in exception handler then dtb variable contain zero value but before i seen magic value.
+Because global and unitialized variables stored in .bss section that we zeroed in kernel_main.
+Move saving passed info from open-sbi after zeroing bss.
+
 Upgrade virtio block driver to latest version. Move from current legacy. virtio spec 4.2.2 MMIO Device Register Layout
 Why version read from virtio-blk device are always 0x01 (legacy) ?
 Why qemu virtio-blk device support only legacy ?
